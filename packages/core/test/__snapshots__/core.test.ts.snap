@@ -1,0 +1,21 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`outputs > renders afro (full) stably 1`] = `"32e72dee708ca8e4"`;
+
+exports[`outputs > renders afro (head) stably 1`] = `"12e50bc5fad12d29"`;
+
+exports[`outputs > renders brick (full) stably 1`] = `"4bda58d131ddc81b"`;
+
+exports[`outputs > renders brick (head) stably 1`] = `"98d3bebbb33f6541"`;
+
+exports[`outputs > renders buzz (full) stably 1`] = `"219b295de4792026"`;
+
+exports[`outputs > renders buzz (head) stably 1`] = `"c8856079d071de7b"`;
+
+exports[`outputs > renders default (full) stably 1`] = `"4b6a0d6c6b1da535"`;
+
+exports[`outputs > renders default (head) stably 1`] = `"c0f80b00c3116ed6"`;
+
+exports[`outputs > renders long (full) stably 1`] = `"bb155eb9c46281e7"`;
+
+exports[`outputs > renders long (head) stably 1`] = `"16adeb0c823abb23"`;
