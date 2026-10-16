@@ -8,7 +8,7 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { basename, extname, join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { DEFAULT_SPEC, analyzePhoto, parseSpec, profilePic, skinFile, toPng, turntable, type CharacterSpec, type Style } from '../src';
+import { DEFAULT_SPEC, analyzePhoto, buildMosaic, encodeMosaic, renderMosaic, parseSpec, profilePic, skinFile, toPng, turntable, type CharacterSpec, type Style } from '../src';
 import { createNodeDetector, readImage } from '../src/node';
 import { SAMPLES } from './samples';
 
@@ -57,6 +57,10 @@ for (const target of targets) {
     console.log('  scores:  ', Object.entries(scores).map(([k, v]) => `${k}=${+v.toFixed(3)}`).join(' '));
     if (res.debugImage) writeFileSync(join(outDir, `${name}-debug.png`), toPng(res.debugImage));
     writeOutputs(name, res.spec);
+    const mosaic = buildMosaic(res.image, res.face, { grid: 32 });
+    for (const look of ['blocks', 'studs', 'flat'] as const)
+      writeFileSync(join(outDir, `${name}-mosaic-${look}.png`), toPng(renderMosaic(mosaic, { size: 512, look })));
+    console.log(`  mosaic: ${mosaic.grid}x${mosaic.grid}, ${mosaic.palette.length} colors, share code ${encodeMosaic(mosaic).length} chars`);
   } else {
     const sample = SAMPLES[target];
     if (!sample) throw new Error(`"${target}" is neither a file nor a sample (${Object.keys(SAMPLES).join(', ')})`);

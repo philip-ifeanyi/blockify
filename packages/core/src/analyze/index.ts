@@ -28,6 +28,8 @@ export interface AnalyzeResult {
   features: Features;
   face: DetectedFace;
   warnings: string[];
+  /** The (downscaled) photo the face coordinates refer to; reused for the mosaic. */
+  image: Bitmap;
   debugImage?: Bitmap;
 }
 
@@ -47,5 +49,5 @@ export async function analyzePhoto(photo: Bitmap, detector: FaceDetector, opts: 
 
   const debugImage = opts.debug ? new Bitmap(img.width, img.height, img.data.slice()) : undefined;
   const features = extractFeatures(img, face, debugImage);
-  return { spec: featuresToSpec(features, opts.style), features, face, warnings, debugImage };
+  return { spec: featuresToSpec(features, opts.style), features, face, warnings, image: img, debugImage };
 }

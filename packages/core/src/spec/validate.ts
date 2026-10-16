@@ -1,4 +1,4 @@
-import { BEARDS, HAIR_STYLES, MOUTHS, SLEEVES, STYLES, DEFAULT_SPEC, type CharacterSpec } from './types';
+import { ARMS, BEARDS, HAIR_STYLES, MOUTHS, SLEEVES, STYLES, DEFAULT_SPEC, type CharacterSpec } from './types';
 
 const HEX = /^#[0-9a-f]{6}$/i;
 const COLOR_KEYS = ['skin', 'hair', 'eyes', 'shirt', 'pants', 'shoes'] as const;
@@ -24,9 +24,15 @@ export function parseSpec(input: unknown): CharacterSpec {
   spec.beard = pick('beard', BEARDS) ?? spec.beard;
   spec.mouth = pick('mouth', MOUTHS) ?? spec.mouth;
   spec.sleeves = pick('sleeves', SLEEVES) ?? spec.sleeves;
-  if (o.glasses !== undefined) {
-    if (typeof o.glasses !== 'boolean') throw new Error('glasses must be a boolean');
-    spec.glasses = o.glasses;
+  spec.arms = pick('arms', ARMS) ?? spec.arms;
+  for (const k of ['glasses', 'lashes'] as const) {
+    if (o[k] === undefined) continue;
+    if (typeof o[k] !== 'boolean') throw new Error(`${k} must be a boolean`);
+    spec[k] = o[k] as boolean;
+  }
+  if (o.lips !== undefined && o.lips !== null) {
+    if (typeof o.lips !== 'string' || !HEX.test(o.lips)) throw new Error('lips must be a #rrggbb color');
+    spec.lips = o.lips.toLowerCase();
   }
   return spec;
 }

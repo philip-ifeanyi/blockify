@@ -40,6 +40,7 @@ const T = {
   eyes: [0, 255, 255, 255],
   shirt: [255, 0, 0, 255],
   ref: [128, 128, 128, 255],
+  lips: [255, 120, 160, 255],
 } satisfies Record<string, RGBA>;
 
 export function extractFeatures(img: Bitmap, face: DetectedFace, debug?: Bitmap): Features {
@@ -152,6 +153,8 @@ export function extractFeatures(img: Bitmap, face: DetectedFace, debug?: Bitmap)
     // An afro is wide at the temples and tall (or cropped off by the top of the photo).
     const tall = volume > 0.4 || volumeSample.inBounds < 0.5;
     if (wide > 0.5 && side > 0.3 && tall) hairStyle = 'afro';
+    // Hair piled on the crown but tight at the sides and temples: a bun or top knot.
+    else if (volume > 0.6 && wide < 0.2 && side < 0.3 && long < 0.2) hairStyle = 'bun';
     else if (long > 0.3) hairStyle = 'long';
     else if (side > 0.35) hairStyle = 'medium';
     else if (nearCoverage < 0.6 && crown < 0.5) hairStyle = 'buzz';
@@ -227,6 +230,23 @@ export function extractFeatures(img: Bitmap, face: DetectedFace, debug?: Bitmap)
   Object.assign(scores, { smileLift: cornerLift, mouthWidth });
   const mouth = cornerLift > 0.012 || mouthWidth > 0.45 ? 'smile' : 'neutral';
 
+  // --- Lips: only when they clearly differ from skin, so natural lips keep the default mouth ---
+  const lipR = Math.max(1, faceWidth * 0.025);
+  const lipMid = (a: number, b: number): Point => [(p(a)[0] + p(b)[0]) / 2, (p(a)[1] + p(b)[1]) / 2];
+  const lipPx = [
+    ...S.disc(lipMid(LM.upperLipTop, LM.upperLipInner), lipR, T.lips).colors,
+    ...S.disc(lipMid(LM.lowerLipInner, LM.lowerLipBottom), lipR, T.lips).colors,
+  ];
+  let lips: RGBA | null = null;
+  if (lipPx.length) {
+    const lip = medianColor(lipPx);
+    const lipLab = toLab(lip);
+    const lipChroma = Math.hypot(lipLab[1], lipLab[2]);
+    const skinC = Math.hypot(skinLab[1], skinLab[2]);
+    Object.assign(scores, { lipDelta: deltaE(lipLab, skinLab), lipChromaGain: lipChroma - skinC });
+    if (deltaE(lipLab, skinLab) > 28 && lipChroma > skinC + 15) lips = lip;
+  }
+
   // --- Shirt: below the chin, ignoring neck skin ---
   const shirtSample = S.rect(-0.45, 0.45, 1.35, 1.8, T.shirt);
   scores.shirtInBounds = shirtSample.inBounds;
@@ -242,7 +262,7 @@ export function extractFeatures(img: Bitmap, face: DetectedFace, debug?: Bitmap)
   // If excluding hair leaves nothing, the clothing simply matches the hair (black coat, black afro).
   const shirt = pickShirt(notClothing) ?? pickShirt([]);
 
-  return { skin, hair, hairStyle, eyes, beard, beardColor, glasses, mouth, shirt, scores };
+  return { skin, hair, hairStyle, eyes, beard, beardColor, glasses, mouth, lips, shirt, scores };
 }
 
 const minDist = (lab: Lab, set: Lab[]) => Math.min(...set.map((t) => deltaE(lab, t)));

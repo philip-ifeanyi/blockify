@@ -32,6 +32,8 @@ export interface Features {
   beardColor: RGBA | null;
   glasses: boolean;
   mouth: Mouth;
+  /** Set only when the lips stand out clearly from the skin (e.g. lipstick). */
+  lips: RGBA | null;
   shirt: RGBA | null;
   /** Raw measurements behind the decisions above; handy for tuning thresholds. */
   scores: Record<string, number>;

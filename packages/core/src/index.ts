@@ -1,8 +1,8 @@
 export * from './spec/types';
 export { parseSpec } from './spec/validate';
 export { encodeSpec, decodeSpec } from './spec/encode';
-export { paintSkin } from './skin/paint';
-export { SKIN_LAYOUT, SKIN_SIZE, faceRect, type BoxUV, type FaceName, type PartName } from './skin/layout';
+export { paintSkin, ACCESSORY_UV } from './skin/paint';
+export { SKIN_LAYOUT, SKIN_SIZE, SLIM_ARMS, skinLayout, faceRect, type BoxUV, type FaceName, type PartName } from './skin/layout';
 export { modelFor, type Framing, type Model } from './render/model';
 export { rasterize, type RenderOptions } from './render/rasterize';
 export * from './outputs';
@@ -10,3 +10,4 @@ export { Bitmap } from './util/image';
 export { parseHex, toHex, type RGBA } from './util/color';
 export * from './analyze';
 export { downscale } from './util/image';
+export * from './mosaic';

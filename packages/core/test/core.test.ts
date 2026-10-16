@@ -7,6 +7,7 @@ import {
   decodeSpec,
   encodeSpec,
   faceRect,
+  skinLayout,
   paintSkin,
   parseSpec,
   profilePic,
@@ -29,6 +30,16 @@ describe('skin layout', () => {
   });
 });
 
+describe('slim arms', () => {
+  it('uses 3px-wide arm boxes at the standard origins', () => {
+    const slim = skinLayout('slim');
+    expect(faceRect(slim.rightArm, 'front')).toEqual({ x: 44, y: 20, w: 3, h: 12 });
+    expect(faceRect(slim.leftArm, 'back')).toEqual({ x: 43, y: 52, w: 3, h: 12 });
+    // The 4th column of the classic arm front is left unpainted in a slim skin.
+    expect(paintSkin(spec({ arms: 'slim' })).get(47 + 4 + 3, 20)[3]).toBe(0);
+  });
+});
+
 describe('paintSkin', () => {
   it('puts skin color on the face and leaves unused regions transparent', () => {
     const bmp = paintSkin(spec({ style: 'brick' })); // brick is noise-free, so colors are exact
@@ -45,12 +56,30 @@ describe('paintSkin', () => {
     expect(glasses.get(hatFront.x + 0, hatFront.y + 4)[3]).toBe(255);
   });
 
+  it('keeps render-only accessories out of the skin file', () => {
+    const bun = spec({ hairStyle: 'bun' });
+    expect(paintSkin(bun, { accessories: true }).get(56, 16)[3]).toBe(255);
+    expect(decode(skinFile(bun)).data[(16 * 64 + 56) * 4 + 3]).toBe(0);
+  });
+
   it('is deterministic', () => {
     expect(paintSkin(spec()).data).toEqual(paintSkin(spec()).data);
   });
 });
 
 describe('spec', () => {
+  it('accepts the newer fields and still decodes older links without them', () => {
+    expect(parseSpec({ arms: 'slim', lashes: true, lips: '#C2465A', hairStyle: 'ponytail' })).toMatchObject({
+      arms: 'slim',
+      lashes: true,
+      lips: '#c2465a',
+      hairStyle: 'ponytail',
+    });
+    const old = { v: 1, style: 'blocky', skin: '#c68863', hairStyle: 'short' }; // pre-arms/lashes/lips link
+    expect(parseSpec(old)).toMatchObject({ arms: 'classic', lashes: false });
+    expect(parseSpec(old).lips).toBeUndefined();
+  });
+
   it('round-trips through the URL encoding', () => {
     const s = spec(SAMPLES.afro);
     expect(decodeSpec(encodeSpec(s))).toEqual(s);
@@ -59,6 +88,9 @@ describe('spec', () => {
   it('rejects bad input', () => {
     expect(() => parseSpec({ skin: 'red' })).toThrow(/skin/);
     expect(() => parseSpec({ hairStyle: 'mohawk' })).toThrow(/hairStyle/);
+    expect(() => parseSpec({ arms: 'wide' })).toThrow(/arms/);
+    expect(() => parseSpec({ lips: 'pink' })).toThrow(/lips/);
+    expect(() => parseSpec({ lashes: 'yes' })).toThrow(/lashes/);
     expect(() => parseSpec(null)).toThrow();
   });
 });

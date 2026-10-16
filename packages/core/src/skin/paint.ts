@@ -1,13 +1,14 @@
 import type { CharacterSpec } from '../spec/types';
 import { hash2, mix, parseHex, shade, type RGBA } from '../util/color';
 import { Bitmap } from '../util/image';
-import { faceRect, FACES, SKIN_LAYOUT, SKIN_SIZE, type BoxUV, type FaceName } from './layout';
+import { faceRect, FACES, SKIN_SIZE, skinLayout, type BoxUV, type FaceName } from './layout';
 
 /** (x, y) are local to the face; `front` is how many pixels this column is from the box's front edge (side faces only). */
 type FacePainter = (x: number, y: number, ctx: { face: FaceName; w: number; h: number; front: number }) => RGBA | null;
 
 const CLEAR: RGBA = [0, 0, 0, 0];
 const FRAME: RGBA = [34, 34, 40, 255];
+const LASH: RGBA = [28, 20, 20, 255];
 const WHITE: RGBA = [240, 240, 240, 255];
 
 /** Absolute skin coordinates of the pixel currently being painted (used to seed texture noise). */
@@ -47,10 +48,16 @@ function hairOnHead(spec: CharacterSpec, face: FaceName, x: number, y: number, f
         return y <= 1 || edge;
       case 'afro':
         return y <= 1 || (y <= 4 && edge);
+      case 'bob':
+        return y <= 1 || (y <= 5 && edge);
+      case 'bun':
+      case 'ponytail':
+        // Pulled back: just a hairline, no fringe.
+        return y === 0 || (y === 1 && (x <= 1 || x >= 6));
     }
   }
   if (face === 'back') {
-    const rows = { buzz: 3, short: 6, medium: 7, long: 7, afro: 7 }[s];
+    const rows = { buzz: 3, short: 6, medium: 7, bob: 7, long: 7, afro: 7, bun: 5, ponytail: 6 }[s];
     return y <= rows;
   }
   // Sides: leave the ear/temple area (near the front, middle rows) as skin.
@@ -65,6 +72,11 @@ function hairOnHead(spec: CharacterSpec, face: FaceName, x: number, y: number, f
       return y <= 2 || front >= 2;
     case 'afro':
       return y <= 5 || front >= 2;
+    case 'bob':
+      return y <= 5 || front >= 3;
+    case 'bun':
+    case 'ponytail':
+      return y <= 2 || (y <= 4 && front >= 4);
   }
 }
 
@@ -83,15 +95,38 @@ function hairOnHat(spec: CharacterSpec, face: FaceName, x: number, y: number, fr
       return face === 'top';
     case 'medium':
       return face === 'back' && y <= 6;
+    case 'bob':
+      // Rounded volume down to the jaw.
+      if (face === 'top') return true;
+      if (face === 'back') return y <= 6;
+      if (face === 'right' || face === 'left') return y <= 4 || (y <= 5 && front >= 2);
+      return face === 'front' && y === 0;
+    case 'bun':
+      // Knot on the crown: back rows of the top face plus the top of the back face.
+      if (face === 'top') return y <= 2 && x >= 2 && x <= 5;
+      return face === 'back' && y <= 1 && x >= 2 && x <= 5;
+    case 'ponytail':
+      return face === 'back' && x >= 3 && x <= 4;
     default:
       return false;
   }
 }
 
-export function paintSkin(spec: CharacterSpec): Bitmap {
+/**
+ * Texture patch for render-only accessories (bun, ponytail tail): unused by the skin format, and
+ * left empty in the downloadable skin file since Minecraft can't show extra geometry anyway.
+ */
+export const ACCESSORY_UV = { x: 56, y: 16, w: 4, h: 4 } as const;
+
+export interface PaintOptions {
+  /** Also paint ACCESSORY_UV (for our own renderer). */
+  accessories?: boolean;
+}
+
+export function paintSkin(spec: CharacterSpec, opts: PaintOptions = {}): Bitmap {
   const bmp = new Bitmap(SKIN_SIZE, SKIN_SIZE);
   const blocky = spec.style === 'blocky';
-  const L = SKIN_LAYOUT;
+  const L = skinLayout(spec.arms);
 
   const skin = parseHex(spec.skin);
   const hair = parseHex(spec.hair);
@@ -99,6 +134,8 @@ export function paintSkin(spec: CharacterSpec): Bitmap {
   const shirt = parseHex(spec.shirt);
   const pants = parseHex(spec.pants);
   const shoes = parseHex(spec.shoes);
+  const lips = spec.lips ? parseHex(spec.lips) : null;
+  const browColor = spec.hairStyle === 'bald' ? shade(skin, 0.8) : shade(hair, 0.9);
 
   // Blocky gets subtle per-pixel noise for that hand-painted texture; brick stays flat.
   const tex = (c: RGBA, amount = 0.08): RGBA =>
@@ -114,21 +151,23 @@ export function paintSkin(spec: CharacterSpec): Bitmap {
         // Eyes: white on the outside, iris on the inside.
         if (y === 4 && (x === 1 || x === 6)) return WHITE;
         if (y === 4 && (x === 2 || x === 5)) return eyes;
-        // Brows.
-        if (y === 3 && (x === 1 || x === 2 || x === 5 || x === 6))
-          return spec.hairStyle === 'bald' ? shade(skin, 0.8) : shade(hair, 0.9);
+        // Lashes: a flick at each eye's outer corner, beside the eye white. Brows stay above.
+        if (spec.lashes && y === 4 && (x === 0 || x === 7)) return LASH;
+        if (y === 3 && (x === 1 || x === 2 || x === 5 || x === 6)) return spec.lashes && (x === 1 || x === 6) ? LASH : browColor;
         // Nose.
         if (y === 5 && (x === 3 || x === 4)) return shade(skin, 0.88);
       } else {
         // Brick: classic smiley — tall black eyes.
         if ((y === 3 || y === 4) && (x === 2 || x === 5)) return [20, 20, 20, 255];
+        if (spec.lashes && y === 3 && (x === 1 || x === 6)) return [20, 20, 20, 255];
       }
       if (blocky) {
-        const mouthDark = shade(skin, 0.55);
-        if (spec.mouth === 'smile' && y === 6 && x >= 2 && x <= 5) return x === 2 || x === 5 ? shade(skin, 0.75) : mouthDark;
-        if (spec.mouth === 'neutral' && y === 6 && (x === 3 || x === 4)) return mouthDark;
+        const mouth = lips ?? shade(skin, 0.55);
+        const corner = lips ? shade(lips, 0.85) : shade(skin, 0.75);
+        if (spec.mouth === 'smile' && y === 6 && x >= 2 && x <= 5) return x === 2 || x === 5 ? corner : mouth;
+        if (spec.mouth === 'neutral' && y === 6 && (x === 3 || x === 4)) return mouth;
       } else {
-        const ink: RGBA = [20, 20, 20, 255];
+        const ink: RGBA = lips ?? [20, 20, 20, 255];
         if (spec.mouth === 'smile' && ((y === 5 && (x === 1 || x === 6)) || (y === 6 && x >= 2 && x <= 5))) return ink;
         if (spec.mouth === 'neutral' && y === 6 && x >= 3 && x <= 4) return ink;
       }
@@ -159,9 +198,13 @@ export function paintSkin(spec: CharacterSpec): Bitmap {
     if (face === 'front' && y === 11) return tex(shade(pants, 0.85)); // belt line
     return tex(face === 'bottom' ? pants : shirt);
   });
-  paintBox(bmp, L.jacket, (x, y, { face }) =>
-    spec.hairStyle === 'long' && face === 'back' && y <= 2 ? tex(shade(hair, 1.08), 0.16) : CLEAR,
-  );
+  // Long hair and ponytails continue down the back, on the jacket (outer) layer.
+  paintBox(bmp, L.jacket, (x, y, { face }) => {
+    if (face !== 'back') return CLEAR;
+    if (spec.hairStyle === 'long' && y <= 2) return tex(shade(hair, 1.08), 0.16);
+    if (spec.hairStyle === 'ponytail' && y <= 4 && x >= 3 && x <= 4) return tex(shade(hair, 1.08), 0.16);
+    return CLEAR;
+  });
 
   // --- Arms ---
   const sleeveRows = spec.sleeves === 'long' ? 11 : 4;
@@ -181,6 +224,16 @@ export function paintSkin(spec: CharacterSpec): Bitmap {
   };
   paintBox(bmp, L.rightLeg, leg);
   paintBox(bmp, L.leftLeg, leg);
+
+  if (opts.accessories && (spec.hairStyle === 'bun' || spec.hairStyle === 'ponytail')) {
+    const A = ACCESSORY_UV;
+    for (let y = 0; y < A.h; y++)
+      for (let x = 0; x < A.w; x++) {
+        cursor.x = A.x + x;
+        cursor.y = A.y + y;
+        bmp.set(A.x + x, A.y + y, tex(shade(hair, 1.05), 0.16));
+      }
+  }
 
   // Remaining overlay layers stay transparent (Bitmap starts zeroed).
   return bmp;

@@ -4,9 +4,17 @@ exports[`outputs > renders afro (full) stably 1`] = `"32e72dee708ca8e4"`;
 
 exports[`outputs > renders afro (head) stably 1`] = `"12e50bc5fad12d29"`;
 
+exports[`outputs > renders bob (full) stably 1`] = `"510a2f23fbd8c372"`;
+
+exports[`outputs > renders bob (head) stably 1`] = `"02bf74078ddc8c2d"`;
+
 exports[`outputs > renders brick (full) stably 1`] = `"4bda58d131ddc81b"`;
 
 exports[`outputs > renders brick (head) stably 1`] = `"98d3bebbb33f6541"`;
+
+exports[`outputs > renders bun (full) stably 1`] = `"9ab537583884be14"`;
+
+exports[`outputs > renders bun (head) stably 1`] = `"2d7892e0a69fcf0b"`;
 
 exports[`outputs > renders buzz (full) stably 1`] = `"219b295de4792026"`;
 
@@ -19,3 +27,7 @@ exports[`outputs > renders default (head) stably 1`] = `"c0f80b00c3116ed6"`;
 exports[`outputs > renders long (full) stably 1`] = `"bb155eb9c46281e7"`;
 
 exports[`outputs > renders long (head) stably 1`] = `"16adeb0c823abb23"`;
+
+exports[`outputs > renders ponytail (full) stably 1`] = `"aa07d4d0a32c3f0f"`;
+
+exports[`outputs > renders ponytail (head) stably 1`] = `"be5ba4b264c81f78"`;

@@ -61,3 +61,16 @@ export const SKIN_LAYOUT = {
 } as const;
 
 export type PartName = keyof typeof SKIN_LAYOUT;
+
+/** Arm boxes for the slim (Alex) model: same texture origins, 3px wide instead of 4. */
+export const SLIM_ARMS = {
+  rightArm: box(40, 16, 3, 12, 4),
+  rightSleeve: box(40, 32, 3, 12, 4),
+  leftArm: box(32, 48, 3, 12, 4),
+  leftSleeve: box(48, 48, 3, 12, 4),
+} as const;
+
+/** The layout with the right arm boxes for the chosen model. */
+export function skinLayout(arms: 'classic' | 'slim') {
+  return arms === 'slim' ? { ...SKIN_LAYOUT, ...SLIM_ARMS } : SKIN_LAYOUT;
+}

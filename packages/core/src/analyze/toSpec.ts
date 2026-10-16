@@ -47,5 +47,6 @@ export function featuresToSpec(f: Features, style: Style = 'blocky'): CharacterS
     beard: f.beard,
     glasses: f.glasses,
     mouth: f.mouth,
+    ...(f.lips ? { lips: toHex(saturate(f.lips, 1.1)) } : {}),
   };
 }

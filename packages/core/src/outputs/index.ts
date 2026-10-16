@@ -1,3 +1,4 @@
+/// <reference path="../gifenc.d.ts" />
 import { encode as encodePng } from 'fast-png';
 import * as gifencModule from 'gifenc';
 import { modelFor, type Framing } from '../render/model';
@@ -45,7 +46,7 @@ export function toPng(bmp: Bitmap): Uint8Array {
 
 /** Renders the character to a bitmap (for previews, or further processing). */
 export function renderCharacter(spec: CharacterSpec, params: RenderParams = {}): Bitmap {
-  return rasterize(modelFor(spec.style), paintSkin(spec), renderOptions(params, {}));
+  return rasterize(modelFor(spec.style, spec.arms, spec.hairStyle), paintSkin(spec, { accessories: true }), renderOptions(params, {}));
 }
 
 /** Square avatar PNG, framed so it survives a circular crop. */
@@ -70,8 +71,8 @@ export interface TurntableParams extends Omit<RenderParams, 'yaw' | 'background'
 /** Looping GIF of the character spinning 360°. */
 export function turntable(spec: CharacterSpec, params: TurntableParams = {}): Uint8Array {
   const frames = clampInt(params.frames ?? 24, 4, 72);
-  const model = modelFor(spec.style);
-  const skin = paintSkin(spec);
+  const model = modelFor(spec.style, spec.arms, spec.hairStyle);
+  const skin = paintSkin(spec, { accessories: true });
   const base = renderOptions(
     { ...params, background: params.background === 'transparent' ? undefined : params.background },
     { size: 256, framing: 'full', pitch: 10, ssaa: 2 },

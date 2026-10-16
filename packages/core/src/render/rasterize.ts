@@ -107,7 +107,7 @@ export function rasterize(model: Model, skin: Bitmap, opts: RenderOptions): Bitm
       const det = ax * by - ay * bx;
       if (Math.abs(det) < 1e-9) continue;
 
-      const rect = faceRect(part.uv, face);
+      const rect = part.uvRect ?? faceRect(part.uv, face);
       const xs = [o[0], pu[0], pv[0], pu[0] + bx];
       const ys = [o[1], pu[1], pv[1], pu[1] + by];
       const x0 = Math.max(0, Math.floor(Math.min(...xs))), x1 = Math.min(W - 1, Math.ceil(Math.max(...xs)));
