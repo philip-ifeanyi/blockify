@@ -3,6 +3,8 @@
   "private": true,
   "packageManager": "pnpm@11.25.0",
   "scripts": {
+    "dev": "pnpm --filter @blockify/web dev",
+    "build": "pnpm --filter @blockify/web build",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
     "core:try": "pnpm --filter @blockify/core try"
