@@ -1,0 +1,10 @@
+services:
+  web:
+    build: .
+    image: blockify-web
+    ports:
+      # 3000/3001 are commonly taken by other local stacks; override with BLOCKIFY_PORT.
+      - "${BLOCKIFY_PORT:-8080}:3000"
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true

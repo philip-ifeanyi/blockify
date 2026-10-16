@@ -1,0 +1,14 @@
+**/node_modules
+**/.next
+**/out
+**/*.tsbuildinfo
+apps/web/public/models
+packages/core/test
+.git
+.claude
+.env
+.env.*
+!.env.example
+.DS_Store
+Dockerfile
+docker-compose.yml
